@@ -6,25 +6,9 @@ import android.location.Location
 import android.os.Build
 import androidx.annotation.RequiresPermission
 import androidx.room.Room
-import aws.sdk.kotlin.services.location.model.BatchEvaluateGeofencesRequest
 import aws.sdk.kotlin.services.location.model.BatchEvaluateGeofencesResponse
 import aws.sdk.kotlin.services.location.model.ResourceNotFoundException
 import aws.smithy.kotlin.runtime.time.epochMilliseconds
-import software.amazon.location.tracking.aws.AmazonTrackingHttpClient
-import software.amazon.location.tracking.aws.LocationTrackingCallback
-import software.amazon.location.tracking.config.LocationTrackerConfig
-import software.amazon.location.tracking.config.SdkConfig.DEFAULT_ACCURACY
-import software.amazon.location.tracking.database.LocationDatabase
-import software.amazon.location.tracking.database.LocationEntry
-import software.amazon.location.tracking.filters.LocationFilter
-import software.amazon.location.tracking.filters.LocationFilterAdapter
-import software.amazon.location.tracking.providers.BackgroundLocationService
-import software.amazon.location.tracking.providers.BackgroundTrackingWorker
-import software.amazon.location.tracking.providers.LocationProvider
-import software.amazon.location.tracking.util.BackgroundTrackingMode
-import software.amazon.location.tracking.util.Logger
-import software.amazon.location.tracking.util.ServiceCallback
-import software.amazon.location.tracking.util.StoreKey
 import com.google.android.gms.location.LocationAvailability
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
@@ -36,9 +20,24 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import software.amazon.location.auth.EncryptedSharedPreferences
 import software.amazon.location.auth.LocationCredentialsProvider
+import software.amazon.location.tracking.aws.AmazonTrackingHttpClient
+import software.amazon.location.tracking.aws.LocationTrackingCallback
+import software.amazon.location.tracking.config.LocationTrackerConfig
+import software.amazon.location.tracking.config.SdkConfig.DEFAULT_ACCURACY
+import software.amazon.location.tracking.database.LocationDatabase
+import software.amazon.location.tracking.database.LocationEntry
 import software.amazon.location.tracking.filters.AccuracyLocationFilter
 import software.amazon.location.tracking.filters.DistanceLocationFilter
+import software.amazon.location.tracking.filters.LocationFilter
+import software.amazon.location.tracking.filters.LocationFilterAdapter
 import software.amazon.location.tracking.filters.TimeLocationFilter
+import software.amazon.location.tracking.providers.BackgroundLocationService
+import software.amazon.location.tracking.providers.BackgroundTrackingWorker
+import software.amazon.location.tracking.providers.LocationProvider
+import software.amazon.location.tracking.util.BackgroundTrackingMode
+import software.amazon.location.tracking.util.Logger
+import software.amazon.location.tracking.util.ServiceCallback
+import software.amazon.location.tracking.util.StoreKey
 import software.amazon.location.tracking.util.StoreKey.IS_ACCURACY_FILTER_ENABLE
 import software.amazon.location.tracking.util.StoreKey.IS_DISTANCE_FILTER_ENABLE
 import software.amazon.location.tracking.util.StoreKey.IS_TIME_FILTER_ENABLE
@@ -176,6 +175,7 @@ class LocationTracker {
     /**
      * Unsubscribes from location updates, stopping the location tracking.
      */
+    @RequiresPermission(anyOf = ["android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"])
     fun stop() {
         securePreferences?.put(StoreKey.TRACKING_IN_PROGRESS, false.toString())
         locationProvider.unsubscribeFromLocationUpdates(locationCallback)
@@ -184,6 +184,7 @@ class LocationTracker {
     /**
      * Unsubscribes from background location updates, stopping the location tracking.
      */
+    @RequiresPermission(anyOf = ["android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"])
     fun stopBackgroundLocationUpdates() {
         securePreferences?.put(StoreKey.BG_TRACKING_IN_PROGRESS, false.toString())
         locationProvider.unsubscribeFromLocationUpdates(locationCallback)

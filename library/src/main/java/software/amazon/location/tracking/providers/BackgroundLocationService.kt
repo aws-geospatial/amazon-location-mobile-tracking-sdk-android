@@ -176,15 +176,24 @@ class BackgroundLocationService : Service() {
      * Additionally, it broadcasts an intent to notify listeners that the service has been stopped.
      */
     private fun stopService() {
-        serviceCallback?.serviceStopped()
-        locationTracker?.stopBackgroundLocationUpdates()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-        } else {
-            stopForeground(true)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            serviceCallback?.serviceStopped()
+            locationTracker?.stopBackgroundLocationUpdates()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                stopForeground(true)
+            }
+            stopSelf()
+            isRunning = false
         }
-        stopSelf()
-        isRunning = false
     }
 }
 

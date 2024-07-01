@@ -2,15 +2,14 @@ package software.amazon.location.tracking
 
 import android.content.Context
 import android.location.Location
+import android.location.LocationManager
 import android.os.Build
 import android.os.Looper
 import android.util.Log
 import androidx.room.RoomDatabase
 import aws.sdk.kotlin.services.location.LocationClient
-import aws.sdk.kotlin.services.location.model.BatchEvaluateGeofencesRequest
 import aws.sdk.kotlin.services.location.model.BatchEvaluateGeofencesResponse
 import aws.sdk.kotlin.services.location.model.BatchUpdateDevicePositionResponse
-import aws.sdk.kotlin.services.location.model.DevicePositionUpdate
 import aws.sdk.kotlin.services.location.model.GetDevicePositionResponse
 import aws.sdk.kotlin.services.location.model.PositionalAccuracy
 import aws.smithy.kotlin.runtime.time.Instant
@@ -66,6 +65,7 @@ import software.amazon.location.tracking.providers.BackgroundLocationService
 import software.amazon.location.tracking.providers.BackgroundTrackingWorker
 import software.amazon.location.tracking.providers.LocationProvider
 import software.amazon.location.tracking.util.BackgroundTrackingMode
+import software.amazon.location.tracking.util.Helper
 import software.amazon.location.tracking.util.ServiceCallback
 import software.amazon.location.tracking.util.StoreKey
 import software.amazon.location.tracking.util.TrackingSdkLogLevel
@@ -76,6 +76,7 @@ class LocationClientTest {
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
     private lateinit var context: Context
+    private lateinit var locationManager: LocationManager
     private lateinit var locationCredentialsProvider: LocationCredentialsProvider
     private lateinit var locationTrackingCallback: LocationTrackingCallback
     private lateinit var serviceCallback: ServiceCallback
@@ -86,6 +87,7 @@ class LocationClientTest {
     @Before
     fun setUp() {
         context = mockk(relaxed = true)
+        locationManager = mockk()
         serviceCallback = mockk()
         locationTrackingCallback = mockk()
         locationCredentialsProvider = mockk()
@@ -96,12 +98,15 @@ class LocationClientTest {
             waitForAccurateLocation = false,
         )
         gsonBuilderMock = mockk()
+        every { context.getSystemService(Context.LOCATION_SERVICE) } returns locationManager
         every { gsonBuilderMock.create() } returns mockk()
         every { gsonBuilderMock.registerTypeAdapter(any(), any()) } returns gsonBuilderMock
 
         val locationClientConfig = mockk<LocationTrackerConfig>()
         every { locationClientConfig.logLevel } returns TrackingSdkLogLevel.DEBUG
 
+        mockkConstructor(Helper::class)
+        every { anyConstructed<Helper>().isGooglePlayServicesAvailable(any()) } returns true
         mockkConstructor(EncryptedSharedPreferences::class)
         every { anyConstructed<EncryptedSharedPreferences>().initEncryptedSharedPreferences() } just runs
         every { anyConstructed<EncryptedSharedPreferences>().get(any()) } returns "mockDeviceID"
@@ -303,6 +308,36 @@ class LocationClientTest {
 
     @Test
     fun `start and stop location background tracking`() {
+        val locationClient =
+            LocationTracker(context, locationCredentialsProvider, locationClientConfig)
+        val task: Task<LocationAvailability> = mockk()
+        every { task.addOnSuccessListener(any()) } answers {
+            val listener = arg<OnSuccessListener<LocationAvailability>>(0)
+            val locationAvailability = mockk<LocationAvailability> {
+                every { isLocationAvailable } returns true
+            }
+            listener.onSuccess(locationAvailability)
+            task
+        }
+        every { fusedLocationProviderClient.locationAvailability } returns task
+        every {
+            fusedLocationProviderClient.requestLocationUpdates(
+                any(), ofType(LocationCallback::class), ofType(Looper::class)
+            )
+        } returns mockk()
+        locationClient.startBackgroundLocationUpdates()
+        locationClient.stopBackgroundLocationUpdates()
+
+        verify {
+            anyConstructed<EncryptedSharedPreferences>().put(
+                StoreKey.BG_TRACKING_IN_PROGRESS, false.toString()
+            )
+        }
+    }
+
+    @Test
+    fun `start and stop location background tracking without fused location`() {
+        every { anyConstructed<Helper>().isGooglePlayServicesAvailable(any()) } returns false
         val locationClient =
             LocationTracker(context, locationCredentialsProvider, locationClientConfig)
         val task: Task<LocationAvailability> = mockk()
