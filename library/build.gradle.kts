@@ -21,7 +21,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.DEFAULT, automaticRelease = true)
     signAllPublications()
 
-    coordinates("software.amazon.location", "tracking", "0.2.4")
+    coordinates("software.amazon.location", "tracking", "0.2.5")
 
     pom {
         name.set("Amazon Location Service Mobile Tracking SDK for Android")
@@ -97,7 +97,7 @@ dependencies {
     if (findProject(":authSdk") != null) {
         implementation(project(":authSdk"))
     } else {
-        implementation("software.amazon.location:auth:0.2.4")
+        implementation("software.amazon.location:auth:0.2.5")
     }
 
     val roomVersion = "2.6.1"
