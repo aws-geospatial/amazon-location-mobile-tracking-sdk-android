@@ -13,6 +13,8 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import aws.sdk.kotlin.services.location.LocationClient
 import aws.sdk.kotlin.services.location.model.BatchUpdateDevicePositionResponse
+import aws.smithy.kotlin.runtime.InternalApi
+import aws.smithy.kotlin.runtime.util.PlatformProvider
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationAvailability
@@ -27,6 +29,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkConstructor
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkAll
@@ -74,8 +77,14 @@ class BackgroundTrackingWorkerTest {
     private lateinit var locationCredentialsProvider: LocationCredentialsProvider
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var gsonBuilderMock: GsonBuilder
+    @OptIn(InternalApi::class)
     @Before
     fun setUp() {
+        // These are mocked out so that the construction of LocationClient doesn't crash
+        // from trying to access null Build.VERSION fields.
+        mockkObject(PlatformProvider.System)
+        every { PlatformProvider.System.isAndroid } returns false
+
         context = mockk(relaxed = true)
         every { context.applicationContext } returns mockk()
         workerParameters = mockk<WorkerParameters>(relaxed = true)

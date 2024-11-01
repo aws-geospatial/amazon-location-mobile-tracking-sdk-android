@@ -6,6 +6,7 @@ import android.location.Location
 import android.os.Build
 import androidx.annotation.RequiresPermission
 import androidx.room.Room
+import aws.sdk.kotlin.services.location.LocationClient
 import aws.sdk.kotlin.services.location.model.BatchEvaluateGeofencesResponse
 import aws.sdk.kotlin.services.location.model.ResourceNotFoundException
 import aws.smithy.kotlin.runtime.time.epochMilliseconds
@@ -51,6 +52,7 @@ private const val PREFS_NAME = "software.amazon.location.tracking.client"
  */
 class LocationTracker {
     private var clientConfig: LocationTrackerConfig
+    private var locationClient: LocationClient
 
     constructor(
         context: Context,
@@ -86,6 +88,7 @@ class LocationTracker {
         locationCredentialsProvider: LocationCredentialsProvider,
         clientConfig: LocationTrackerConfig,
     ) {
+        this.locationClient = LocationClient(locationCredentialsProvider.getLocationClientConfig())
         this.context = context
         this.clientConfig = clientConfig
         this.locationCredentialsProvider = locationCredentialsProvider
@@ -253,6 +256,10 @@ class LocationTracker {
         return location
     }
 
+    fun getLocationClient():LocationClient {
+        return locationClient
+    }
+
     /**
      * Retrieves the device location from AWS location services.
      * @return The device Location from AWS or null if the device location is not found or an error occurs.
@@ -261,7 +268,7 @@ class LocationTracker {
         validateAndRefreshLocationCredentials()
         return try {
             val deviceLocation = httpClient.getTrackerDeviceLocation(
-                locationCredentialsProvider?.getLocationClient(),
+                getLocationClient(),
             )
             deviceLocation.let {
                 Location("").apply {
@@ -299,7 +306,7 @@ class LocationTracker {
         validateAndRefreshLocationCredentials()
         return try {
             httpClient.batchEvaluateGeofences(
-                locationCredentialsProvider?.getLocationClient(),
+                getLocationClient(),
                 locationEntry,
                 deviceId,
                 identityId,
@@ -342,7 +349,7 @@ class LocationTracker {
         }.toTypedArray()
 
         val result = httpClient.updateTrackerDeviceLocation(
-            locationCredentialsProvider?.getLocationClient(),
+            getLocationClient(),
             locationsToUpload,
         )
 

@@ -12,7 +12,9 @@ import aws.sdk.kotlin.services.location.model.BatchEvaluateGeofencesResponse
 import aws.sdk.kotlin.services.location.model.BatchUpdateDevicePositionResponse
 import aws.sdk.kotlin.services.location.model.GetDevicePositionResponse
 import aws.sdk.kotlin.services.location.model.PositionalAccuracy
+import aws.smithy.kotlin.runtime.InternalApi
 import aws.smithy.kotlin.runtime.time.Instant
+import aws.smithy.kotlin.runtime.util.PlatformProvider
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationAvailability
@@ -84,13 +86,20 @@ class LocationClientTest {
     private lateinit var gsonBuilderMock: GsonBuilder
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
+    @OptIn(InternalApi::class)
     @Before
     fun setUp() {
+        // These are mocked out so that the construction of LocationClient doesn't crash
+        // from trying to access null Build.VERSION fields.
+        mockkObject(PlatformProvider.System)
+        every { PlatformProvider.System.isAndroid } returns false
+
         context = mockk(relaxed = true)
         locationManager = mockk()
         serviceCallback = mockk()
         locationTrackingCallback = mockk()
         locationCredentialsProvider = mockk()
+        every { locationCredentialsProvider.getLocationClientConfig()} returns {}
         locationClientConfig = LocationTrackerConfig(
             trackerName = TRACKER_NAME,
             logLevel = TrackingSdkLogLevel.DEBUG,
@@ -381,9 +390,9 @@ class LocationClientTest {
         val mockAmazonLocationClient = mockk<LocationClient>()
         coEvery { locationCredentialsProvider.isCredentialsValid() } returns true
         coEvery { locationCredentialsProvider.verifyAndRefreshCredentials() } just runs
-        coEvery {
-            locationCredentialsProvider.getLocationClient()
-        } returns mockAmazonLocationClient
+        mockkConstructor(LocationTracker::class)
+        every { anyConstructed<LocationTracker>().getLocationClient() } returns mockAmazonLocationClient
+
         val batchEvaluateGeofencesResponse = BatchEvaluateGeofencesResponse.invoke {
             errors = listOf()
         }
@@ -417,9 +426,9 @@ class LocationClientTest {
         val mockAmazonLocationClient = mockk<LocationClient>()
         coEvery { locationCredentialsProvider.isCredentialsValid() } returns true
         coEvery { locationCredentialsProvider.verifyAndRefreshCredentials() } just runs
-        coEvery {
-            locationCredentialsProvider.getLocationClient()
-        } returns mockAmazonLocationClient
+        mockkConstructor(LocationTracker::class)
+        every { anyConstructed<LocationTracker>().getLocationClient() } returns mockAmazonLocationClient
+
         val mockGetDevicePositionResult = GetDevicePositionResponse.invoke {
             position = listOf(27.51551, 23.5444)
             sampleTime = Instant.now()
@@ -443,9 +452,8 @@ class LocationClientTest {
         val mockAmazonLocationClient = mockk<LocationClient>()
         coEvery { locationCredentialsProvider.isCredentialsValid() } returns true
         coEvery { locationCredentialsProvider.verifyAndRefreshCredentials() } just runs
-        coEvery {
-            locationCredentialsProvider.getLocationClient()
-        } returns mockAmazonLocationClient
+        mockkConstructor(LocationTracker::class)
+        every { anyConstructed<LocationTracker>().getLocationClient() } returns mockAmazonLocationClient
 
         val result = BatchUpdateDevicePositionResponse.invoke {
             errors = listOf()
