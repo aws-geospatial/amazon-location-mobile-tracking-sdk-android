@@ -49,22 +49,20 @@ class LocationUpdateTest {
     @Test
     fun `test update Tracker Device Locations`() {
         val locationCredentialProvider = mockk<LocationCredentialsProvider>()
+        mockkConstructor(LocationClient::class)
         val mockAmazonLocationClient = mockk<LocationClient>()
         val mockLocation = mockk<Location>()
         val mockDeviceIdProvider = mockk<DeviceIdProvider>()
 
         val deviceID = "mockDeviceID"
         every { mockDeviceIdProvider.getDeviceID() } returns deviceID
-        coEvery {
-            locationCredentialProvider.getLocationClient()
-        } returns mockAmazonLocationClient
         val currentTimeMillis = System.currentTimeMillis()
         every { mockLocation.time } returns currentTimeMillis
         every { mockLocation.latitude } returns 23.455
         every { mockLocation.longitude } returns 103.556
         val exception = Exception("Mock exception")
         coEvery {
-            mockAmazonLocationClient.batchUpdateDevicePosition(any())
+            anyConstructed<LocationClient>().batchUpdateDevicePosition(any())
         } throws exception
 
         val amazonTrackingHttpClient = AmazonTrackingHttpClient(context, "mockTrackerName")
@@ -91,9 +89,6 @@ class LocationUpdateTest {
 
         val deviceID = "mockDeviceID"
         every { mockDeviceIdProvider.getDeviceID() } returns deviceID
-        coEvery {
-            locationCredentialProvider.getLocationClient()
-        } returns mockAmazonLocationClient
         val amazonTrackingHttpClient = AmazonTrackingHttpClient(context, "mockTrackerName")
 
         val mockGetDevicePositionResult = mockk<GetDevicePositionResponse>()
@@ -128,9 +123,6 @@ class LocationUpdateTest {
         every { mockLocation.longitude } returns 103.556
 
         val mockBatchUpdateDevicePositionResult = mockk<BatchUpdateDevicePositionResponse>()
-        coEvery {
-            locationCredentialProvider.getLocationClient()
-        } returns mockAmazonLocationClient
         coEvery {
             mockAmazonLocationClient.batchUpdateDevicePosition(any())
         } returns mockBatchUpdateDevicePositionResult
