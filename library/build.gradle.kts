@@ -21,7 +21,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
     signAllPublications()
 
-    coordinates("software.amazon.location", "tracking", "1.0.0")
+    coordinates("software.amazon.location", "tracking", "1.0.1")
 
     pom {
         name.set("Amazon Location Service Mobile Tracking SDK for Android")
