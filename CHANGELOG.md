@@ -1,3 +1,9 @@
+# 1.0.1
+
+### ✨ Features and improvements
+
+- Several Dependency updates.
+
 # 1.0.0
 
 ### ✨ Features and improvements
