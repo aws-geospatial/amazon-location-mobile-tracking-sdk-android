@@ -1,37 +1,22 @@
-name: publish
+name: Release Package - Kotlin
 
 on:
-  release:
-    types: [created]
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  publish:
+  release-kotlin:
     permissions:
-      contents: read
+      contents: write
       actions: write
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checking out branch
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: 17
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Build with Gradle
-        run: ./gradlew build
-      
-      - name: Publish to Maven Central
-        env:
-          ORG_GRADLE_PROJECT_TrackingSDKUsername: ${{ secrets.SONATYPE_ACCOUNT_USERNAME }}
-          ORG_GRADLE_PROJECT_TrackingSDKPassword: ${{ secrets.SONATYPE_ACCOUNT_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SONATYPE_ACCOUNT_GPG_KEY }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SONATYPE_ACCOUNT_GPG_KEY_ID }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SONATYPE_ACCOUNT_GPG_KEY_PASSWORD }}
-        run: ./gradlew publishAllPublicationsToTrackingSDKRepository
+      packages: write
+    uses: aws-geospatial/github-workflows-for-amazon-location/.github/workflows/kotlin-release.yml@main
+    with:
+      working-directory: "."
+    secrets:
+      SONATYPE_ACCOUNT_USERNAME: ${{ secrets.SONATYPE_ACCOUNT_USERNAME }}
+      SONATYPE_ACCOUNT_PASSWORD: ${{ secrets.SONATYPE_ACCOUNT_PASSWORD }}
+      SONATYPE_ACCOUNT_GPG_KEY: ${{ secrets.SONATYPE_ACCOUNT_GPG_KEY }}
+      SONATYPE_ACCOUNT_GPG_KEY_ID: ${{ secrets.SONATYPE_ACCOUNT_GPG_KEY_ID }}
+      SONATYPE_ACCOUNT_GPG_KEY_PASSWORD: ${{ secrets.SONATYPE_ACCOUNT_GPG_KEY_PASSWORD }}
